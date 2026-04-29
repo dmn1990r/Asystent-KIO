@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KIO Asystent">
+<meta name="theme-color" content="#0f0f0f">
+<title>KIO Asystent Rozprawy</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Newsreader:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #161616;
+  --bg3: #1e1e1e;
+  --bg4: #272727;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ede8;
+  --text2: #9a9690;
+  --text3: #5c5a57;
+  --accent: #c8a96e;
+  --accent2: #8fb8a0;
+  --danger: #c96e6e;
+  --warn: #c8a96e;
+  --info: #6e9ec8;
+  --mono: 'DM Mono', monospace;
+  --serif: 'Newsreader', Georgia, serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--mono);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Layout ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  padding: 14px 20px 12px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.header-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--text);
+  flex: 1;
+}
+.header-title span { color: var(--accent); }
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border2);
+  background: var(--bg2);
+  font-size: 11px;
+  color: var(--text2);
+}
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text3);
+}
+.status-dot.ready { background: var(--accent2); }
+.status-dot.rec { background: var(--danger); animation: blink 1s infinite; }
+.status-dot.busy { background: var(--warn); animation: blink 0.7s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+/* ── Tab bar ── */
+.tabs {
+  display: flex;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.tab {
+  flex: 1;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 1.5px solid transparent;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Panels ── */
+.panel { display: none; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; flex-direction: column; }
+.panel.active { display: flex; }
+
+/* ── Setup Panel ── */
+.setup-panel { padding: 20px; gap: 24px; }
+
+.section-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text3);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+.field input {
+  width: 100%;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  outline: none;
+  -webkit-appearance: none;
+}
+.field input:focus { border-color: var(--accent); }
+
+.drop-zone {
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.drop-zone:active { background: var(--bg3); }
+.drop-zone p { font-size: 12px; color: var(--text2); margin-top: 8px; line-height: 1.5; }
+.drop-zone .icon { font-size: 28px; }
+.drop-zone input { display: none; }
+
+.doc-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.doc-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border);
+}
+.doc-name { flex: 1; font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-badge {
+  font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 500; letter-spacing: 0.05em;
+}
+.doc-badge.pdf { background: rgba(201,110,110,0.15); color: #e89090; }
+.doc-badge.docx { background: rgba(110,158,200,0.15); color: #90b8e0; }
+.doc-remove { background: none; border: none; color: var(--text3); font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1; }
+.doc-remove:active { color: var(--danger); }
+
+.save-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: #1a1200;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.save-btn:active { opacity: 0.8; }
+
+.info-box {
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+
+/* ── Hearing Panel ── */
+.hearing-panel { gap: 0; }
+
+.rec-zone {
+  padding: 20px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
+}
+
+.timer-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.timer {
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.timer.rec { color: var(--danger); }
+
+.waveform {
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.wave-bar {
+  width: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  min-height: 3px;
+  transition: height 0.08s;
+}
+
+.btn-row { display: flex; gap: 8px; }
+.btn-big {
+  flex: 1;
+  padding: 13px;
+  border-radius: var(--radius);
+  border: none;
+  font-family: var(--mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.btn-big:active { transform: scale(0.97); }
+.btn-rec-start { background: var(--danger); color: white; }
+.btn-rec-stop { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border2); }
+.btn-analyze { background: var(--bg3); color: var(--accent); border: 0.5px solid rgba(200,169,110,0.3); }
+.btn-analyze:disabled { opacity: 0.35; pointer-events: none; }
+
+.auto-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px;
+  font-size: 11px; color: var(--text2);
+}
+.toggle { position: relative; width: 34px; height: 20px; cursor: pointer; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--bg4);
+  border-radius: 10px;
+  border: 0.5px solid var(--border2);
+  transition: 0.2s;
+}
+.toggle input:checked + .toggle-track { background: var(--accent2); border-color: var(--accent2); }
+.toggle-thumb {
+  position: absolute;
+  width: 16px; height: 16px;
+  background: var(--text);
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: 0.2s;
+}
+.toggle input:checked ~ .toggle-thumb { left: 16px; }
+
+/* ── Transcript Area ── */
+.transcript-area {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.transcript-label { font-size: 10px; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+.transcript-box {
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
+  min-height: 120px;
+  outline: none;
+}
+.transcript-box.empty { color: var(--text3); font-style: italic; }
+.transcript-box[contenteditable]:focus { color: var(--text); }
+
+/* ── Progress ── */
+.progress-wrap {
+  padding: 12px 20px;
+  border-top: 0.5px solid var(--border);
+  flex-shrink: 0;
+  display: none;
+}
+.progress-bar {
+  height: 2px;
+  background: var(--bg4);
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+  transition: width 0.4s;
+}
+.progress-label { font-size: 11px; color: var(--text3); }
+
+/* ── Analysis Panel ── */
+.analysis-panel { padding: 16px 20px; gap: 12px; }
+
+.analysis-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text3);
+  font-size: 12px;
+  min-height: 300px;
+}
+.analysis-empty .big { font-size: 36px; opacity: 0.2; }
+
+.summary-box {
+  padding: 12px 14px;
+  background: var(--bg3);
+  border-radius: var(--radius);
+  border: 0.5px solid var(--border);
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text2);
+}
+
+.analysis-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 0.5px solid var(--border);
+}
+.card-header {
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.card-header .count {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.card-body { padding: 12px 14px; }
+.card-body.compliance { background: rgba(143,184,160,0.06); }
+.card-header.compliance { background: rgba(143,184,160,0.12); color: #8fb8a0; }
+.card-header.compliance .count { background: rgba(143,184,160,0.2); color: #8fb8a0; }
+.card-body.counter { background: rgba(110,158,200,0.06); }
+.card-header.counter { background: rgba(110,158,200,0.12); color: #6e9ec8; }
+.card-header.counter .count { background: rgba(110,158,200,0.2); color: #6e9ec8; }
+.card-body.newargs { background: rgba(200,169,110,0.06); }
+.card-header.newargs { background: rgba(200,169,110,0.12); color: #c8a96e; }
+.card-header.newargs .count { background: rgba(200,169,110,0.2); color: #c8a96e; }
+
+.compliance-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
+.compliance-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.compliance-row { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 3px; }
+.compliance-icon { font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+.compliance-arg { font-size: 12px; font-weight: 500; color: var(--text); }
+.compliance-reason { font-size: 11px; color: var(--text2); line-height: 1.55; padding-left: 19px; }
+
+.counter-item { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border); }
+.counter-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.counter-num { font-size: 10px; color: var(--text3); margin-bottom: 3px; }
+.counter-arg { font-size: 13px; font-family: var(--serif); color: var(--text); line-height: 1.55; margin-bottom: 6px; }
+.counter-basis {
+  font-size: 11px; color: var(--text2); padding: 7px 10px;
+  background: rgba(110,158,200,0.08);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid rgba(110,158,200,0.4);
+  line-height: 1.5;
+}
+
+.new-item { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 0.5px solid var(--border); }
+.new-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.new-header { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 6px; }
+.priority-badge {
+  font-size: 9px; padding: 2px 6px; border-radius: 4px;
+  font-weight: 500; letter-spacing: 0.05em; flex-shrink: 0; margin-top: 1px;
+}
+.priority-badge.wysoki { background: rgba(201,110,110,0.2); color: #e89090; }
+.priority-badge.sredni { background: rgba(200,169,110,0.2); color: #c8a96e; }
+.priority-badge.niski { background: rgba(143,184,160,0.2); color: #8fb8a0; }
+.new-arg { font-size: 12px; font-weight: 500; color: var(--text); }
+.new-claude {
+  font-size: 12px; color: var(--text2); padding: 9px 12px;
+  background: rgba(200,169,110,0.07);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid rgba(200,169,110,0.35);
+  line-height: 1.6;
+}
+.new-claude-label {
+  font-size: 10px; color: var(--warn); letter-spacing: 0.08em;
+  display: block; margin-bottom: 4px; text-transform: uppercase;
+}
+
+.error-box {
+  background: rgba(201,110,110,0.1);
+  border: 0.5px solid rgba(201,110,110,0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #e89090;
+  line-height: 1.5;
+}
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── iOS-specific ── */
+@supports (-webkit-touch-callout: none) {
+  .header { padding-top: max(14px, env(safe-area-inset-top)); }
+}
+
+/* ── Desktop layout ── */
+@media (min-width: 768px) {
+  .app { flex-direction: row; flex-wrap: wrap; }
+  .header { width: 100%; flex-shrink: 0; }
+  .tabs { width: 100%; }
+
+  .sidebar-desktop {
+    width: 280px;
+    border-right: 0.5px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-desktop {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: calc(100vh - 97px);
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-title"><span>KIO</span> Asystent Rozprawy</div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Konfiguracja</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="setup">Konfiguracja</button>
+    <button class="tab" data-tab="hearing">Rozprawa</button>
+    <button class="tab" data-tab="analysis">Analiza</button>
+  </div>
+
+  <!-- ══ SETUP PANEL ══ -->
+  <div class="panel active setup-panel" id="tab-setup">
+
+    <div>
+      <div class="section-label">Klucze API</div>
+      <div class="field">
+        <label>Groq API key (transkrypcja Whisper)</label>
+        <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off" inputmode="text">
+      </div>
+      <div class="field">
+        <label>Anthropic API key (analiza Claude)</label>
+        <input type="password" id="anthropicKey" placeholder="sk-ant-..." autocomplete="off" inputmode="text">
+      </div>
+      <div class="info-box">
+        Klucze są przechowywane tylko lokalnie w przeglądarce (localStorage). Nie są nigdzie wysyłane poza oficjalne API.
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Dokumenty sprawy</div>
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📄</div>
+        <p>Naciśnij aby dodać PDF lub DOCX<br><small style="color:var(--text3)">odwołanie · odpowiedź · stanowisko</small></p>
+        <input type="file" id="fileInput" multiple accept=".pdf,.docx">
+      </div>
+      <div class="doc-list" id="docList"></div>
+    </div>
+
+    <div>
+      <div class="section-label">Mikrofon DJI Mic 2</div>
+      <div class="info-box">
+        <strong style="color:var(--accent)">MacBook:</strong> odbiornik USB-C → wybierz jako wejście audio w Ustawieniach dźwięku.<br><br>
+        <strong style="color:var(--accent)">iPhone:</strong> odbiornik Lightning/USB-C → iOS automatycznie wykryje jako mikrofon. Aplikacja użyje wybranego urządzenia wejściowego.
+      </div>
+    </div>
+
+    <button class="save-btn" id="saveBtn">Zapisz i przejdź do rozprawy →</button>
+  </div>
+
+  <!-- ══ HEARING PANEL ══ -->
+  <div class="panel hearing-panel" id="tab-hearing">
+
+    <div class="rec-zone">
+      <div class="timer-row">
+        <span class="timer" id="recTimer">0:00</span>
+        <div class="waveform" id="waveform">
+          <!-- bars generated by JS -->
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-big btn-rec-start" id="recBtn">⏺ Nagraj</button>
+        <button class="btn-big btn-analyze" id="analyzeBtn" disabled>Analizuj ↗</button>
+      </div>
+
+      <div class="auto-row">
+        <label class="toggle">
+          <input type="checkbox" id="autoAnalyze" checked>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+        <span>Auto-analiza po zatrzymaniu nagrania</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">Przetwarzanie...</div>
+    </div>
+
+    <div class="transcript-area">
+      <div class="transcript-label">Stanowisko strony przeciwnej</div>
+      <div class="transcript-box empty" id="transcriptBox" contenteditable="true">
+        Transkrypt pojawi się tu automatycznie po nagraniu. Możesz też wpisać tekst ręcznie.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ANALYSIS PANEL ══ -->
+  <div class="panel analysis-panel" id="tab-analysis">
+    <div class="analysis-empty" id="analysisEmpty">
+      <div class="big">⚖</div>
+      <div>Nagraj stanowisko strony przeciwnej<br>lub wpisz transkrypt ręcznie i kliknij Analizuj</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+<script>
+'use strict';
+
+/* ── State ── */
+const S = {
+  docs: [],
+  recording: false,
+  chunks: [],
+  mediaRecorder: null,
+  stream: null,
+  analyser: null,
+  audioCtx: null,
+  animFrame: null,
+  timerIv: null,
+  seconds: 0,
+  transcript: '',
+  hasAnalysis: false
+};
+
+/* ── Utils ── */
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function setStatus(type, text) {
+  $('statusDot').className = 'status-dot' + (type ? ' '+type : '');
+  $('statusText').textContent = text;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab===name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+/* ── Persist keys ── */
+function loadKeys() {
+  $('groqKey').value = localStorage.getItem('kio_groq') || '';
+  $('anthropicKey').value = localStorage.getItem('kio_ant') || '';
+  updateReadiness();
+}
+function saveKeys() {
+  localStorage.setItem('kio_groq', $('groqKey').value.trim());
+  localStorage.setItem('kio_ant', $('anthropicKey').value.trim());
+}
+['groqKey','anthropicKey'].forEach(id => $( id).addEventListener('input', () => { saveKeys(); updateReadiness(); }));
+
+function updateReadiness() {
+  const ok = $('groqKey').value.trim() && $('anthropicKey').value.trim() && S.docs.length > 0;
+  setStatus(ok?'ready':'', ok ? `Gotowy · ${S.docs.length} dok.` : 'Skonfiguruj klucze API i dodaj dokumenty');
+}
+
+/* ── Save button ── */
+$('saveBtn').addEventListener('click', () => {
+  saveKeys();
+  if (!$('groqKey').value.trim() || !$('anthropicKey').value.trim()) {
+    alert('Wpisz oba klucze API przed kontynuowaniem.');
+    return;
+  }
+  if (S.docs.length === 0) {
+    alert('Dodaj co najmniej jeden dokument sprawy.');
+    return;
+  }
+  switchTab('hearing');
+});
+
+/* ── Files ── */
+const dropZone = $('dropZone');
+const fileInput = $('fileInput');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.background='var(--bg3)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.background=''; });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.style.background=''; handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+async function handleFiles(files) {
+  for (const f of files) {
+    if (!f.name.match(/\.(pdf|docx)$/i)) continue;
+    const ext = f.name.split('.').pop().toLowerCase();
+    let text = '';
+    if (ext === 'docx') {
+      try {
+        const ab = await f.arrayBuffer();
+        const r = await mammoth.extractRawText({arrayBuffer: ab});
+        text = r.value;
+      } catch(e) { text = '[Błąd odczytu DOCX: ' + e.message + ']'; }
+    } else {
+      text = await readAsBase64(f);
+    }
+    S.docs.push({ name: f.name, ext, text, isB64: ext==='pdf' });
+    renderDocs();
+    updateReadiness();
+  }
+}
+
+function readAsBase64(f) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  });
+}
+
+function renderDocs() {
+  const list = $('docList');
+  list.innerHTML = '';
+  S.docs.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'doc-item';
+    el.innerHTML = `<span class="doc-name" title="${esc(d.name)}">${esc(d.name)}</span><span class="doc-badge ${d.ext}">${d.ext.toUpperCase()}</span><button class="doc-remove" data-i="${i}">×</button>`;
+    list.appendChild(el);
+  });
+  list.querySelectorAll('.doc-remove').forEach(btn => btn.addEventListener('click', () => {
+    S.docs.splice(+btn.dataset.i, 1);
+    renderDocs(); updateReadiness();
+  }));
+}
+
+/* ── Waveform ── */
+function buildWaveform() {
+  const wf = $('waveform');
+  wf.innerHTML = '';
+  const n = Math.floor(wf.offsetWidth / 5) || 40;
+  for (let i=0; i<n; i++) {
+    const b = document.createElement('div');
+    b.className = 'wave-bar';
+    b.style.height = '3px';
+    wf.appendChild(b);
+  }
+}
+
+function animateWave() {
+  if (!S.analyser) return;
+  const bars = $('waveform').children;
+  const data = new Uint8Array(S.analyser.frequencyBinCount);
+  S.analyser.getByteFrequencyData(data);
+  const step = Math.floor(data.length / bars.length);
+  const maxH = 28;
+  for (let i=0; i<bars.length; i++) {
+    const val = data[i*step] || 0;
+    const h = Math.max(3, (val/255)*maxH);
+    bars[i].style.height = h+'px';
+    bars[i].style.background = val > 180 ? 'var(--danger)' : val > 80 ? 'var(--accent)' : 'var(--border2)';
+  }
+  S.animFrame = requestAnimationFrame(animateWave);
+}
+
+/* ── Detect best MIME ── */
+function getSupportedMime() {
+  const types = ['audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg'];
+  for (const t of types) { if (MediaRecorder.isTypeSupported(t)) return t; }
+  return '';
+}
+
+/* ── Recording ── */
+$('recBtn').addEventListener('click', async () => {
+  if (!S.recording) {
+    await startRec();
+  } else {
+    await stopAndProcess();
+  }
+});
+
+async function startRec() {
+  try {
+    S.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 48000 }, video: false });
+  } catch(e) {
+    alert('Brak dostępu do mikrofonu: ' + e.message);
+    return;
+  }
+
+  S.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = S.audioCtx.createMediaStreamSource(S.stream);
+  S.analyser = S.audioCtx.createAnalyser();
+  S.analyser.fftSize = 256;
+  src.connect(S.analyser);
+
+  const mime = getSupportedMime();
+  S.chunks = [];
+  S.mediaRecorder = new MediaRecorder(S.stream, mime ? { mimeType: mime } : {});
+  S.mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) S.chunks.push(e.data); };
+  S.mediaRecorder.start(500);
+
+  S.recording = true;
+  S.seconds = 0;
+  $('recBtn').textContent = '⏹ Stop';
+  $('recBtn').className = 'btn-big btn-rec-stop';
+  $('analyzeBtn').disabled = true;
+  setStatus('rec', 'Nagrywanie...');
+  $('recTimer').classList.add('rec');
+
+  S.timerIv = setInterval(() => {
+    S.seconds++;
+    const m = Math.floor(S.seconds/60), s = S.seconds%60;
+    $('recTimer').textContent = m+':'+(s<10?'0':'')+s;
+  }, 1000);
+
+  buildWaveform();
+  animateWave();
+}
+
+async function stopAndProcess() {
+  await new Promise(res => { S.mediaRecorder.onstop = res; S.mediaRecorder.stop(); });
+  S.stream.getTracks().forEach(t => t.stop());
+  cancelAnimationFrame(S.animFrame);
+  if (S.audioCtx) S.audioCtx.close();
+  clearInterval(S.timerIv);
+
+  S.recording = false;
+  $('recBtn').textContent = '⏺ Nagraj';
+  $('recBtn').className = 'btn-big btn-rec-start';
+  $('recTimer').classList.remove('rec');
+  $('waveform').querySelectorAll('.wave-bar').forEach(b => { b.style.height='3px'; b.style.background='var(--border2)'; });
+
+  setStatus('busy', 'Transkrybuję...');
+  showProgress(25, 'Wysyłam audio do Groq Whisper...');
+
+  const mime = S.mediaRecorder.mimeType || 'audio/webm';
+  const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : 'webm';
+  const blob = new Blob(S.chunks, { type: mime });
+
+  await transcribe(blob, ext);
+}
+
+async function transcribe(blob, ext) {
+  const key = $('groqKey').value.trim();
+  const fd = new FormData();
+  fd.append('file', blob, 'nagranie.'+ext);
+  fd.append('model', 'whisper-large-v3');
+  fd.append('language', 'pl');
+  fd.append('response_format', 'json');
+
+  try {
+    showProgress(50, 'Transkrypcja Groq Whisper...');
+    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer '+key },
+      body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || res.statusText);
+    hideProgress();
+    S.transcript = data.text || '';
+    const tb = $('transcriptBox');
+    tb.textContent = S.transcript;
+    tb.classList.remove('empty');
+    $('analyzeBtn').disabled = false;
+    setStatus('ready', 'Transkrypcja gotowa');
+    switchTab('hearing');
+
+    if ($('autoAnalyze').checked && S.transcript) {
+      await analyze();
+    }
+  } catch(e) {
+    hideProgress();
+    setStatus('ready', 'Błąd transkrypcji');
+    showError('Błąd Groq: ' + e.message);
+  }
+}
+
+/* ── Manual analyze ── */
+$('analyzeBtn').addEventListener('click', analyze);
+
+$('transcriptBox').addEventListener('focus', function() {
+  if (this.classList.contains('empty')) { this.textContent=''; this.classList.remove('empty'); }
+});
+$('transcriptBox').addEventListener('blur', function() {
+  const t = this.textContent.trim();
+  if (!t) { this.textContent='Transkrypt pojawi się tu automatycznie po nagraniu. Możesz też wpisać tekst ręcznie.'; this.classList.add('empty'); }
+  else { S.transcript = t; $('analyzeBtn').disabled = false; }
+});
+
+/* ── Analysis ── */
+async function analyze() {
+  const antKey = $('anthropicKey').value.trim();
+  const tb = $('transcriptBox');
+  const transcript = tb.classList.contains('empty') ? '' : tb.textContent.trim();
+  if (!transcript) { showError('Brak transkryptu — nagraj lub wpisz tekst.'); return; }
+  if (!S.docs.length) { showError('Załaduj dokumenty sprawy w zakładce Konfiguracja.'); return; }
+  if (!antKey) { showError('Brak klucza Anthropic API.'); return; }
+
+  $('analyzeBtn').disabled = true;
+  $('analyzeBtn').innerHTML = '<div class="spinner"></div>';
+  setStatus('busy', 'Claude analizuje...');
+  showProgress(70, 'Analiza AI...');
+  switchTab('analysis');
+
+  try {
+    const messages = buildMessages(transcript);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error?.message || res.statusText);
+
+    const raw = data.content?.[0]?.text || '';
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    renderAnalysis(parsed);
+    setStatus('ready', 'Analiza gotowa');
+  } catch(e) {
+    setStatus('ready', 'Błąd analizy');
+    showError('Błąd Claude: ' + e.message);
+  } finally {
+    hideProgress();
+    $('analyzeBtn').disabled = false;
+    $('analyzeBtn').innerHTML = 'Analizuj ↗';
+  }
+}
+
+const SYSTEM_PROMPT = `Jesteś asystentem prawnym specjalizującym się w polskim prawie zamówień publicznych (PZP) i postępowaniach przed Krajową Izbą Odwoławczą (KIO).
+
+Analizujesz transkrypt ustnego stanowiska strony przeciwnej podczas rozprawy KIO. Działasz na rzecz strony, która wniosła odwołanie lub odpowiada na odwołanie.
+
+Twoje zadania:
+1. Ocenić zgodność argumentów strony przeciwnej z załadowanymi dokumentami sprawy
+2. Zaproponować kontrargumenty oparte WYŁĄCZNIE na konkretnych fragmentach tych dokumentów
+3. Zidentyfikować nowe argumenty nieobecne w dokumentach i ocenić jak najlepiej na nie odpowiedzieć
+
+Odpowiedz WYŁĄCZNIE w JSON, bez preambuły, bez znaczników markdown:
+{
+  "compliance": [
+    {
+      "argument": "krótkie streszczenie argumentu strony przeciwnej",
+      "status": "potwierdzone|sprzeczne|neutralne",
+      "uzasadnienie": "dlaczego i jakim fragmentem dokumentu jest potwierdzone lub obalane"
+    }
+  ],
+  "counter_arguments": [
+    {
+      "argument": "sformułowany kontrargument do użycia w ripoście",
+      "podstawa": "konkretny fragment dokumentu + nazwa dokumentu"
+    }
+  ],
+  "new_arguments": [
+    {
+      "argument": "argument nieobecny w dokumentach sprawy",
+      "ocena": "analiza i sugestia jak odpowiedzieć w oparciu o prawo zamówień publicznych i orzecznictwo KIO",
+      "priorytet": "wysoki|sredni|niski"
+    }
+  ],
+  "podsumowanie": "1-2 zdania ogólnej oceny siły stanowiska strony przeciwnej"
+}`;
+
+function buildMessages(transcript) {
+  const textDocs = S.docs.filter(d => !d.isB64);
+  const pdfDocs = S.docs.filter(d => d.isB64);
+
+  if (pdfDocs.length > 0) {
+    const content = [];
+    pdfDocs.forEach(d => {
+      content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: d.text }, title: d.name });
+    });
+    if (textDocs.length > 0) {
+      const textCtx = textDocs.map(d => `--- DOKUMENT: ${d.name} ---\n${d.text}`).join('\n\n');
+      content.push({ type: 'text', text: `DODATKOWE DOKUMENTY (DOCX):\n${textCtx}` });
+    }
+    content.push({ type: 'text', text: `TRANSKRYPT STANOWISKA STRONY PRZECIWNEJ:\n${transcript}\n\nPrzeanalizuj i zwróć JSON.` });
+    return [{ role: 'user', content }];
+  } else {
+    const ctx = textDocs.map(d => `--- DOKUMENT: ${d.name} ---\n${d.text}`).join('\n\n');
+    return [{ role: 'user', content: `DOKUMENTY SPRAWY:\n${ctx}\n\n---\n\nTRANSKRYPT STANOWISKA STRONY PRZECIWNEJ:\n${transcript}\n\nPrzeanalizuj i zwróć JSON.` }];
+  }
+}
+
+/* ── Render analysis ── */
+function renderAnalysis(a) {
+  const panel = $('tab-analysis');
+  $('analysisEmpty').style.display = 'none';
+  panel.querySelectorAll('.summary-box,.analysis-card,.error-box').forEach(el => el.remove());
+
+  if (a.podsumowanie) {
+    const el = document.createElement('div');
+    el.className = 'summary-box';
+    el.textContent = a.podsumowanie;
+    panel.appendChild(el);
+  }
+
+  if (a.compliance?.length) {
+    const icons = { potwierdzone: '✓', sprzeczne: '✗', neutralne: '·' };
+    const card = document.createElement('div');
+    card.className = 'analysis-card';
+    card.innerHTML = `<div class="card-header compliance">✅ Zgodność z dokumentami<span class="count">${a.compliance.length}</span></div>
+    <div class="card-body compliance">${a.compliance.map(c=>`<div class="compliance-item">
+      <div class="compliance-row"><span class="compliance-icon">${icons[c.status]||'·'}</span><span class="compliance-arg">${esc(c.argument)}</span></div>
+      <div class="compliance-reason">${esc(c.uzasadnienie)}</div>
+    </div>`).join('')}</div>`;
+    panel.appendChild(card);
+  }
+
+  if (a.counter_arguments?.length) {
+    const card = document.createElement('div');
+    card.className = 'analysis-card';
+    card.innerHTML = `<div class="card-header counter">💡 Kontrargumenty<span class="count">${a.counter_arguments.length}</span></div>
+    <div class="card-body counter">${a.counter_arguments.map((c,i)=>`<div class="counter-item">
+      <div class="counter-num">${i+1}.</div>
+      <div class="counter-arg">${esc(c.argument)}</div>
+      <div class="counter-basis">Podstawa: ${esc(c.podstawa)}</div>
+    </div>`).join('')}</div>`;
+    panel.appendChild(card);
+  }
+
+  if (a.new_arguments?.length) {
+    const card = document.createElement('div');
+    card.className = 'analysis-card';
+    card.innerHTML = `<div class="card-header newargs">⚠ Nowe argumenty — riposta<span class="count">${a.new_arguments.length}</span></div>
+    <div class="card-body newargs">${a.new_arguments.map(n=>`<div class="new-item">
+      <div class="new-header"><span class="priority-badge ${n.priorytet||'sredni'}">${(n.priorytet||'?').toUpperCase()}</span><span class="new-arg">${esc(n.argument)}</span></div>
+      <div class="new-claude"><span class="new-claude-label">Sugestia Claude</span>${esc(n.ocena)}</div>
+    </div>`).join('')}</div>`;
+    panel.appendChild(card);
+  }
+
+  S.hasAnalysis = true;
+}
+
+/* ── Progress / Error ── */
+function showProgress(pct, label) {
+  $('progressWrap').style.display='';
+  $('progressFill').style.width=pct+'%';
+  $('progressLabel').textContent=label;
+}
+function hideProgress() { $('progressWrap').style.display='none'; }
+
+function showError(msg) {
+  const panel = $('tab-analysis');
+  $('analysisEmpty').style.display='none';
+  const el = document.createElement('div');
+  el.className = 'error-box';
+  el.textContent = msg;
+  panel.appendChild(el);
+  switchTab('analysis');
+  setTimeout(()=>el.remove(), 10000);
+}
+
+/* ── Boot ── */
+loadKeys();
+buildWaveform();
+window.addEventListener('resize', buildWaveform);
+</script>
+</body>
+</html>
