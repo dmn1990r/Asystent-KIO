@@ -207,7 +207,7 @@ body {
 }
 
 /* ── Hearing Panel ── */
-.hearing-panel { gap: 0; }
+.hearing-panel { gap: 0; flex-direction: column; }
 
 .rec-zone {
   padding: 20px;
@@ -328,7 +328,7 @@ body {
 .progress-label { font-size: 11px; color: var(--text3); }
 
 /* ── Analysis Panel ── */
-.analysis-panel { padding: 16px 20px; gap: 12px; }
+.analysis-panel { padding: 16px 20px; gap: 12px; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 .analysis-empty {
   flex: 1;
@@ -356,7 +356,7 @@ body {
 
 .analysis-card {
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
   border: 0.5px solid var(--border);
 }
 .card-header {
@@ -367,6 +367,7 @@ body {
   display: flex;
   align-items: center;
   gap: 7px;
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 .card-header .count {
   margin-left: auto;
@@ -374,7 +375,7 @@ body {
   padding: 2px 7px;
   border-radius: 10px;
 }
-.card-body { padding: 12px 14px; }
+.card-body { padding: 12px 14px; border-radius: 0 0 var(--radius) var(--radius); }
 .card-body.compliance { background: rgba(143,184,160,0.06); }
 .card-header.compliance { background: rgba(143,184,160,0.12); color: #8fb8a0; }
 .card-header.compliance .count { background: rgba(143,184,160,0.2); color: #8fb8a0; }
@@ -447,6 +448,31 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.model-seg {
+  display: flex;
+  background: var(--bg4);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  border: 0.5px solid var(--border);
+}
+.model-seg-btn {
+  padding: 4px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.model-seg-btn.active {
+  background: var(--bg2);
+  color: var(--accent);
+  border: 0.5px solid var(--border2);
+}
+
 /* ── iOS-specific ── */
 @supports (-webkit-touch-callout: none) {
   .header { padding-top: max(14px, env(safe-area-inset-top)); }
@@ -454,26 +480,20 @@ body {
 
 /* ── Desktop layout ── */
 @media (min-width: 768px) {
-  .app { flex-direction: row; flex-wrap: wrap; }
-  .header { width: 100%; flex-shrink: 0; }
-  .tabs { width: 100%; }
-
-  .sidebar-desktop {
-    width: 280px;
-    border-right: 0.5px solid var(--border);
-    overflow-y: auto;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
+  .app {
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    height: 100dvh;
   }
-
-  .main-desktop {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    height: calc(100vh - 97px);
-  }
+  .header { grid-row: 1; }
+  .tabs { grid-row: 2; }
+  .panel { grid-row: 3; min-height: 0; }
+  .panel.active { display: flex; }
+  .setup-panel { max-width: 600px; margin: 0 auto; width: 100%; overflow-y: auto; }
+  .hearing-panel { overflow: hidden; }
+  .analysis-panel { overflow-y: auto; }
 }
 </style>
 </head>
@@ -560,6 +580,15 @@ body {
         </label>
         <span>Auto-analiza po zatrzymaniu nagrania</span>
       </div>
+
+      <div class="auto-row" style="margin-top:10px;">
+        <span style="color:var(--text3);font-size:11px;margin-right:6px;">Model:</span>
+        <div class="model-seg" id="modelSeg">
+          <button class="model-seg-btn active" data-model="claude-haiku-4-5-20251001">Haiku</button>
+          <button class="model-seg-btn" data-model="claude-sonnet-4-5">Sonnet</button>
+        </div>
+        <span id="modelHint" style="font-size:10px;color:var(--text3);margin-left:8px;">szybszy · tańszy</span>
+      </div>
     </div>
 
     <div class="progress-wrap" id="progressWrap">
@@ -603,7 +632,8 @@ const S = {
   timerIv: null,
   seconds: 0,
   transcript: '',
-  hasAnalysis: false
+  hasAnalysis: false,
+  model: 'claude-haiku-4-5-20251001'
 };
 
 /* ── Utils ── */
@@ -885,8 +915,8 @@ async function analyze() {
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        model: S.model,
+        max_tokens: 4000,
         system: SYSTEM_PROMPT,
         messages
       })
@@ -897,7 +927,25 @@ async function analyze() {
 
     const raw = data.content?.[0]?.text || '';
     const clean = raw.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch(parseErr) {
+      // Próba naprawy obciętego JSON
+      let fixed = clean;
+      // Zamknij otwarte tablice i obiekt
+      const openBrackets = (fixed.match(/\[/g)||[]).length - (fixed.match(/\]/g)||[]).length;
+      const openBraces = (fixed.match(/\{/g)||[]).length - (fixed.match(/\}/g)||[]).length;
+      // Usuń ostatnią niekompletną linię
+      fixed = fixed.replace(/,\s*$/, '').replace(/[^}\]]*$/, '');
+      for (let i=0; i<openBrackets; i++) fixed += ']';
+      for (let i=0; i<openBraces; i++) fixed += '}';
+      try {
+        parsed = JSON.parse(fixed);
+      } catch(e2) {
+        throw new Error('Odpowiedź Claude jest niekompletna. Spróbuj z krótszym dokumentem lub poczekaj chwilę i spróbuj ponownie.');
+      }
+    }
     renderAnalysis(parsed);
     setStatus('ready', 'Analiza gotowa');
   } catch(e) {
@@ -1039,6 +1087,15 @@ function showError(msg) {
 loadKeys();
 buildWaveform();
 window.addEventListener('resize', buildWaveform);
+
+document.querySelectorAll('.model-seg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.model-seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    S.model = btn.dataset.model;
+    $('modelHint').textContent = S.model.includes('haiku') ? 'szybszy · tańszy' : 'dokładniejszy · wolniejszy';
+  });
+});
 </script>
 </body>
 </html>
