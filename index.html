@@ -258,6 +258,9 @@ body {
 .btn-big:active { transform: scale(0.97); }
 .btn-rec-start { background: var(--danger); color: white; }
 .btn-rec-stop { background: var(--bg3); color: var(--text); border: 0.5px solid var(--border2); }
+.btn-marker { background: var(--bg3); color: var(--accent); border: 0.5px solid rgba(200,169,110,0.3); flex: 0 0 auto; padding: 13px 16px; }
+.btn-marker:disabled { opacity: 0.35; pointer-events: none; }
+.btn-marker.active { background: rgba(200,169,110,0.15); }
 .btn-analyze { background: var(--bg3); color: var(--accent); border: 0.5px solid rgba(200,169,110,0.3); }
 .btn-analyze:disabled { opacity: 0.35; pointer-events: none; }
 
@@ -473,6 +476,108 @@ body {
   border: 0.5px solid var(--border2);
 }
 
+/* ── Cost Bar ── */
+.cost-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text2);
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+.cost-label { color: var(--text3); }
+.cost-total { color: var(--accent); font-weight: 500; }
+.cost-sep { color: var(--text3); }
+.cost-count { color: var(--text2); }
+.cost-export {
+  margin-left: auto;
+  background: none;
+  border: 0.5px solid var(--border2);
+  color: var(--text2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.cost-export:hover { background: var(--bg4); color: var(--text); }
+
+/* ── History List ── */
+.history-list { display: flex; flex-direction: column; gap: 12px; }
+
+.history-item {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  overflow: hidden;
+}
+.history-header {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+}
+.history-header:hover { background: var(--bg3); }
+.history-num {
+  font-size: 10px;
+  color: var(--accent);
+  background: rgba(200,169,110,0.1);
+  padding: 3px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.history-time { font-size: 11px; color: var(--text3); flex-shrink: 0; }
+.history-preview {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text2);
+  font-family: var(--serif);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+}
+.history-cost { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+.history-chevron {
+  color: var(--text3);
+  transition: transform 0.2s;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.history-item.expanded .history-chevron { transform: rotate(90deg); }
+.history-body {
+  display: none;
+  padding: 0 14px 14px;
+  border-top: 0.5px solid var(--border);
+}
+.history-item.expanded .history-body { display: block; padding-top: 14px; }
+.history-transcript {
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border2);
+  margin-bottom: 12px;
+}
+.history-transcript-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
 /* ── iOS-specific ── */
 @supports (-webkit-touch-callout: none) {
   .header { padding-top: max(14px, env(safe-area-inset-top)); }
@@ -536,6 +641,17 @@ body {
     </div>
 
     <div>
+      <div class="section-label">Twoja teza w sprawie</div>
+      <div class="field">
+        <label>Krótko opisz po której stronie występujesz i kluczowe argumenty</label>
+        <textarea id="thesisField" placeholder="np. Bronię odwołującego. Kluczowe zarzuty: brak należytej staranności przy ocenie ofert (art. 226 ust. 1 pkt 5 PZP), niespełnienie warunków udziału przez wybranego wykonawcę..." style="width:100%;min-height:90px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 12px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;resize:vertical;line-height:1.5;"></textarea>
+      </div>
+      <div class="info-box">
+        Ta teza będzie towarzyszyć każdej analizie — Claude będzie wiedział z której perspektywy oceniać argumenty strony przeciwnej.
+      </div>
+    </div>
+
+    <div>
       <div class="section-label">Dokumenty sprawy</div>
       <div class="drop-zone" id="dropZone">
         <div class="icon">📄</div>
@@ -569,7 +685,13 @@ body {
 
       <div class="btn-row">
         <button class="btn-big btn-rec-start" id="recBtn">⏺ Nagraj</button>
+        <button class="btn-big btn-marker" id="markerBtn" disabled>⚐ Postaw marker</button>
         <button class="btn-big btn-analyze" id="analyzeBtn" disabled>Analizuj ↗</button>
+      </div>
+
+      <div id="markerInfo" style="display:none;font-size:11px;color:var(--accent);margin-top:8px;padding:6px 10px;background:rgba(200,169,110,0.08);border-radius:var(--radius-sm);border-left:2px solid var(--accent);">
+        <span id="markerLabel">⚐ Marker postawiony</span>
+        <button id="clearMarker" style="float:right;background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0;">× usuń</button>
       </div>
 
       <div class="auto-row">
@@ -606,6 +728,17 @@ body {
 
   <!-- ══ ANALYSIS PANEL ══ -->
   <div class="panel analysis-panel" id="tab-analysis">
+    <div class="cost-bar" id="costBar" style="display:none;">
+      <span class="cost-label">Koszt sesji:</span>
+      <span class="cost-total" id="costTotal">0,00 PLN</span>
+      <span class="cost-sep">·</span>
+      <span class="cost-count" id="costCount">0 analiz</span>
+      <button class="cost-export" id="exportBtn" title="Eksportuj historię rozprawy">⤓ Eksport</button>
+      <button class="cost-export" id="clearSessionBtn" title="Wyczyść historię rozprawy" style="margin-left:6px;">× Wyczyść</button>
+    </div>
+
+    <div class="history-list" id="historyList"></div>
+
     <div class="analysis-empty" id="analysisEmpty">
       <div class="big">⚖</div>
       <div>Nagraj stanowisko strony przeciwnej<br>lub wpisz transkrypt ręcznie i kliknij Analizuj</div>
@@ -633,8 +766,30 @@ const S = {
   seconds: 0,
   transcript: '',
   hasAnalysis: false,
-  model: 'claude-haiku-4-5-20251001'
+  model: 'claude-haiku-4-5-20251001',
+  thesis: '',
+  // Continuous recording state
+  recStartTime: 0,
+  markerTimeSec: null,
+  // History of speeches
+  history: [],
+  speechCounter: 0,
+  totalCostPLN: 0
 };
+
+/* ── Pricing ── */
+// USD per 1M tokens, then × ~4 PLN
+const USD_TO_PLN = 4.0;
+const PRICING = {
+  'claude-haiku-4-5-20251001': { in: 1.00, out: 5.00 },
+  'claude-sonnet-4-5': { in: 3.00, out: 15.00 }
+};
+
+function calcCostPLN(modelId, inputTokens, outputTokens) {
+  const p = PRICING[modelId] || PRICING['claude-haiku-4-5-20251001'];
+  const usd = (inputTokens / 1e6) * p.in + (outputTokens / 1e6) * p.out;
+  return usd * USD_TO_PLN;
+}
 
 /* ── Utils ── */
 const $ = id => document.getElementById(id);
@@ -651,17 +806,61 @@ function switchTab(name) {
 }
 document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
-/* ── Persist keys ── */
+/* ── Persist keys + thesis + session ── */
 function loadKeys() {
   $('groqKey').value = localStorage.getItem('kio_groq') || '';
   $('anthropicKey').value = localStorage.getItem('kio_ant') || '';
+  $('thesisField').value = localStorage.getItem('kio_thesis') || '';
+  S.thesis = $('thesisField').value;
+  // Restore session
+  loadSession();
   updateReadiness();
 }
 function saveKeys() {
   localStorage.setItem('kio_groq', $('groqKey').value.trim());
   localStorage.setItem('kio_ant', $('anthropicKey').value.trim());
+  localStorage.setItem('kio_thesis', $('thesisField').value.trim());
+  S.thesis = $('thesisField').value.trim();
 }
-['groqKey','anthropicKey'].forEach(id => $( id).addEventListener('input', () => { saveKeys(); updateReadiness(); }));
+['groqKey','anthropicKey','thesisField'].forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', () => { saveKeys(); updateReadiness(); });
+});
+
+/* ── Session persistence ── */
+function saveSession() {
+  try {
+    const session = {
+      history: S.history,
+      speechCounter: S.speechCounter,
+      totalCostPLN: S.totalCostPLN,
+      docs: S.docs.map(d => ({ name: d.name, ext: d.ext, text: d.text, isB64: d.isB64 }))
+    };
+    localStorage.setItem('kio_session', JSON.stringify(session));
+  } catch(e) {
+    console.warn('Nie udało się zapisać sesji:', e.message);
+  }
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem('kio_session');
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    S.history = s.history || [];
+    S.speechCounter = s.speechCounter || 0;
+    S.totalCostPLN = s.totalCostPLN || 0;
+    if (s.docs && S.docs.length === 0) {
+      S.docs = s.docs;
+      renderDocs();
+    }
+    if (S.history.length > 0) {
+      renderHistory();
+      updateCostBar();
+    }
+  } catch(e) {
+    console.warn('Nie udało się wczytać sesji:', e.message);
+  }
+}
 
 function updateReadiness() {
   const ok = $('groqKey').value.trim() && $('anthropicKey').value.trim() && S.docs.length > 0;
@@ -708,6 +907,7 @@ async function handleFiles(files) {
     S.docs.push({ name: f.name, ext, text, isB64: ext==='pdf' });
     renderDocs();
     updateReadiness();
+    saveSession();
   }
 }
 
@@ -731,7 +931,7 @@ function renderDocs() {
   });
   list.querySelectorAll('.doc-remove').forEach(btn => btn.addEventListener('click', () => {
     S.docs.splice(+btn.dataset.i, 1);
-    renderDocs(); updateReadiness();
+    renderDocs(); updateReadiness(); saveSession();
   }));
 }
 
@@ -771,13 +971,29 @@ function getSupportedMime() {
   return '';
 }
 
-/* ── Recording ── */
+/* ── Recording (continuous mode with markers) ── */
 $('recBtn').addEventListener('click', async () => {
   if (!S.recording) {
     await startRec();
   } else {
     await stopAndProcess();
   }
+});
+
+$('markerBtn').addEventListener('click', () => {
+  if (!S.recording) return;
+  S.markerTimeSec = S.seconds;
+  $('markerInfo').style.display = 'block';
+  const m = Math.floor(S.markerTimeSec/60), s = S.markerTimeSec%60;
+  $('markerLabel').textContent = `⚐ Marker postawiony (${m}:${(s<10?'0':'')+s}) — analiza obejmie nagranie od tego momentu`;
+  $('markerBtn').classList.add('active');
+});
+
+$('clearMarker').addEventListener('click', e => {
+  e.stopPropagation();
+  S.markerTimeSec = null;
+  $('markerInfo').style.display = 'none';
+  $('markerBtn').classList.remove('active');
 });
 
 async function startRec() {
@@ -797,15 +1013,25 @@ async function startRec() {
   const mime = getSupportedMime();
   S.chunks = [];
   S.mediaRecorder = new MediaRecorder(S.stream, mime ? { mimeType: mime } : {});
-  S.mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) S.chunks.push(e.data); };
-  S.mediaRecorder.start(500);
+  // Capture each second as separate chunk - allows trimming by marker
+  S.mediaRecorder.ondataavailable = e => {
+    if (e.data && e.data.size > 0) {
+      S.chunks.push({ blob: e.data, atSec: S.seconds });
+    }
+  };
+  S.mediaRecorder.start(1000);
 
   S.recording = true;
   S.seconds = 0;
-  $('recBtn').textContent = '⏹ Stop';
+  S.markerTimeSec = null;
+  S.recStartTime = Date.now();
+  $('recBtn').textContent = '⏹ Stop nagrywania';
   $('recBtn').className = 'btn-big btn-rec-stop';
+  $('markerBtn').disabled = false;
   $('analyzeBtn').disabled = true;
-  setStatus('rec', 'Nagrywanie...');
+  $('markerInfo').style.display = 'none';
+  $('markerBtn').classList.remove('active');
+  setStatus('rec', 'Nagrywanie ciągłe...');
   $('recTimer').classList.add('rec');
 
   S.timerIv = setInterval(() => {
@@ -828,15 +1054,26 @@ async function stopAndProcess() {
   S.recording = false;
   $('recBtn').textContent = '⏺ Nagraj';
   $('recBtn').className = 'btn-big btn-rec-start';
+  $('markerBtn').disabled = true;
+  $('markerBtn').classList.remove('active');
   $('recTimer').classList.remove('rec');
   $('waveform').querySelectorAll('.wave-bar').forEach(b => { b.style.height='3px'; b.style.background='var(--border2)'; });
 
   setStatus('busy', 'Transkrybuję...');
-  showProgress(25, 'Wysyłam audio do Groq Whisper...');
+  const fromMarker = S.markerTimeSec !== null ? ` od markera (${S.markerTimeSec}s)` : '';
+  showProgress(25, 'Wysyłam audio do Groq Whisper' + fromMarker + '...');
 
   const mime = S.mediaRecorder.mimeType || 'audio/webm';
   const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : 'webm';
-  const blob = new Blob(S.chunks, { type: mime });
+
+  // Filter chunks if marker was set
+  let chunksToUse = S.chunks;
+  if (S.markerTimeSec !== null) {
+    chunksToUse = S.chunks.filter(c => c.atSec >= S.markerTimeSec);
+    if (chunksToUse.length === 0) chunksToUse = S.chunks;
+  }
+  const blob = new Blob(chunksToUse.map(c => c.blob), { type: mime });
+  $('markerInfo').style.display = 'none';
 
   await transcribe(blob, ext);
 }
@@ -873,7 +1110,15 @@ async function transcribe(blob, ext) {
   } catch(e) {
     hideProgress();
     setStatus('ready', 'Błąd transkrypcji');
-    showError('Błąd Groq: ' + e.message);
+    let msg = e.message;
+    if (msg.includes('401') || /invalid|unauthorized/i.test(msg)) {
+      msg = 'Nieprawidłowy klucz Groq API. Sprawdź klucz w zakładce Konfiguracja.';
+    } else if (msg.includes('429') || /rate.?limit/i.test(msg)) {
+      msg = 'Limit Groq API przekroczony. Poczekaj minutę i spróbuj ponownie.';
+    } else if (/network|failed to fetch/i.test(msg)) {
+      msg = 'Brak połączenia z internetem. Sprawdź Wi-Fi.';
+    }
+    showError('Transkrypcja: ' + msg);
   }
 }
 
@@ -906,6 +1151,8 @@ async function analyze() {
 
   try {
     const messages = buildMessages(transcript);
+    const sysWithThesis = SYSTEM_PROMPT + (S.thesis ? `\n\nKONTEKST — TEZA REPREZENTOWANEJ STRONY:\n${S.thesis}` : '');
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -917,13 +1164,33 @@ async function analyze() {
       body: JSON.stringify({
         model: S.model,
         max_tokens: 4000,
-        system: SYSTEM_PROMPT,
+        system: sysWithThesis,
         messages
       })
     });
 
     const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error?.message || res.statusText);
+    if (!res.ok || data.error) {
+      const err = data.error?.message || res.statusText || 'unknown';
+      let friendly = err;
+      if (/invalid.*api.?key|authentication/i.test(err)) {
+        friendly = 'Nieprawidłowy klucz Anthropic API. Sprawdź klucz w zakładce Konfiguracja.';
+      } else if (/rate.?limit|429/i.test(err)) {
+        friendly = 'Limit Anthropic API przekroczony. Poczekaj chwilę i spróbuj ponownie.';
+      } else if (/credit|balance|quota/i.test(err)) {
+        friendly = 'Brak kredytów na koncie Anthropic. Doładuj na console.anthropic.com.';
+      } else if (/overloaded/i.test(err)) {
+        friendly = 'Serwery Anthropic są przeciążone. Spróbuj za chwilę.';
+      } else if (/model/i.test(err) && /not.*found|invalid/i.test(err)) {
+        friendly = 'Nieprawidłowy model. Spróbuj przełączyć na drugi model.';
+      }
+      throw new Error(friendly);
+    }
+
+    // Track cost
+    const usage = data.usage || {};
+    const costPLN = calcCostPLN(S.model, usage.input_tokens || 0, usage.output_tokens || 0);
+    S.totalCostPLN += costPLN;
 
     const raw = data.content?.[0]?.text || '';
     const clean = raw.replace(/```json|```/g,'').trim();
@@ -931,26 +1198,40 @@ async function analyze() {
     try {
       parsed = JSON.parse(clean);
     } catch(parseErr) {
-      // Próba naprawy obciętego JSON
       let fixed = clean;
-      // Zamknij otwarte tablice i obiekt
       const openBrackets = (fixed.match(/\[/g)||[]).length - (fixed.match(/\]/g)||[]).length;
       const openBraces = (fixed.match(/\{/g)||[]).length - (fixed.match(/\}/g)||[]).length;
-      // Usuń ostatnią niekompletną linię
       fixed = fixed.replace(/,\s*$/, '').replace(/[^}\]]*$/, '');
       for (let i=0; i<openBrackets; i++) fixed += ']';
       for (let i=0; i<openBraces; i++) fixed += '}';
       try {
         parsed = JSON.parse(fixed);
       } catch(e2) {
-        throw new Error('Odpowiedź Claude jest niekompletna. Spróbuj z krótszym dokumentem lub poczekaj chwilę i spróbuj ponownie.');
+        throw new Error('Odpowiedź Claude jest niekompletna. Spróbuj z krótszym fragmentem lub przełącz na model Sonnet.');
       }
     }
-    renderAnalysis(parsed);
-    setStatus('ready', 'Analiza gotowa');
+
+    // Add to history
+    S.speechCounter++;
+    const speech = {
+      num: S.speechCounter,
+      timestamp: new Date().toISOString(),
+      timeStr: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+      transcript,
+      analysis: parsed,
+      model: S.model,
+      costPLN,
+      tokens: { in: usage.input_tokens || 0, out: usage.output_tokens || 0 }
+    };
+    S.history.unshift(speech);
+    saveSession();
+
+    renderHistory();
+    updateCostBar();
+    setStatus('ready', `Wystąpienie #${S.speechCounter} — analiza gotowa`);
   } catch(e) {
     setStatus('ready', 'Błąd analizy');
-    showError('Błąd Claude: ' + e.message);
+    showError(e.message);
   } finally {
     hideProgress();
     $('analyzeBtn').disabled = false;
@@ -1013,55 +1294,152 @@ function buildMessages(transcript) {
   }
 }
 
-/* ── Render analysis ── */
-function renderAnalysis(a) {
-  const panel = $('tab-analysis');
-  $('analysisEmpty').style.display = 'none';
-  panel.querySelectorAll('.summary-box,.analysis-card,.error-box').forEach(el => el.remove());
+/* ── Render history of speeches ── */
+function renderHistory() {
+  const list = $('historyList');
+  $('analysisEmpty').style.display = S.history.length === 0 ? '' : 'none';
+  list.innerHTML = '';
 
+  S.history.forEach((speech, idx) => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (idx === 0 ? ' expanded' : '');
+    const a = speech.analysis;
+    const preview = (a?.podsumowanie || speech.transcript || '').substring(0, 80) + '...';
+
+    item.innerHTML = `
+      <div class="history-header">
+        <span class="history-num">#${speech.num}</span>
+        <span class="history-time">${speech.timeStr}</span>
+        <span class="history-preview">${esc(preview)}</span>
+        <span class="history-cost">${speech.costPLN.toFixed(3)} PLN</span>
+        <span class="history-chevron">›</span>
+      </div>
+      <div class="history-body">
+        <span class="history-transcript-label">Transkrypt</span>
+        <div class="history-transcript">${esc(speech.transcript)}</div>
+        <div class="speech-analysis"></div>
+      </div>`;
+
+    list.appendChild(item);
+
+    // Render analysis blocks inside
+    const analysisContainer = item.querySelector('.speech-analysis');
+    if (a) renderAnalysisInto(a, analysisContainer);
+
+    // Toggle expand
+    item.querySelector('.history-header').addEventListener('click', () => {
+      item.classList.toggle('expanded');
+    });
+  });
+}
+
+function renderAnalysisInto(a, container) {
   if (a.podsumowanie) {
     const el = document.createElement('div');
     el.className = 'summary-box';
     el.textContent = a.podsumowanie;
-    panel.appendChild(el);
+    container.appendChild(el);
   }
 
   if (a.compliance?.length) {
     const icons = { potwierdzone: '✓', sprzeczne: '✗', neutralne: '·' };
     const card = document.createElement('div');
     card.className = 'analysis-card';
+    card.style.marginTop = '12px';
     card.innerHTML = `<div class="card-header compliance">✅ Zgodność z dokumentami<span class="count">${a.compliance.length}</span></div>
     <div class="card-body compliance">${a.compliance.map(c=>`<div class="compliance-item">
       <div class="compliance-row"><span class="compliance-icon">${icons[c.status]||'·'}</span><span class="compliance-arg">${esc(c.argument)}</span></div>
       <div class="compliance-reason">${esc(c.uzasadnienie)}</div>
     </div>`).join('')}</div>`;
-    panel.appendChild(card);
+    container.appendChild(card);
   }
 
   if (a.counter_arguments?.length) {
     const card = document.createElement('div');
     card.className = 'analysis-card';
+    card.style.marginTop = '12px';
     card.innerHTML = `<div class="card-header counter">💡 Kontrargumenty<span class="count">${a.counter_arguments.length}</span></div>
     <div class="card-body counter">${a.counter_arguments.map((c,i)=>`<div class="counter-item">
       <div class="counter-num">${i+1}.</div>
       <div class="counter-arg">${esc(c.argument)}</div>
       <div class="counter-basis">Podstawa: ${esc(c.podstawa)}</div>
     </div>`).join('')}</div>`;
-    panel.appendChild(card);
+    container.appendChild(card);
   }
 
   if (a.new_arguments?.length) {
     const card = document.createElement('div');
     card.className = 'analysis-card';
+    card.style.marginTop = '12px';
     card.innerHTML = `<div class="card-header newargs">⚠ Nowe argumenty — riposta<span class="count">${a.new_arguments.length}</span></div>
     <div class="card-body newargs">${a.new_arguments.map(n=>`<div class="new-item">
       <div class="new-header"><span class="priority-badge ${n.priorytet||'sredni'}">${(n.priorytet||'?').toUpperCase()}</span><span class="new-arg">${esc(n.argument)}</span></div>
       <div class="new-claude"><span class="new-claude-label">Sugestia Claude</span>${esc(n.ocena)}</div>
     </div>`).join('')}</div>`;
-    panel.appendChild(card);
+    container.appendChild(card);
   }
+}
 
-  S.hasAnalysis = true;
+function updateCostBar() {
+  const bar = $('costBar');
+  if (S.history.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  $('costTotal').textContent = S.totalCostPLN.toFixed(3) + ' PLN';
+  $('costCount').textContent = S.history.length + (S.history.length === 1 ? ' analiza' : (S.history.length < 5 ? ' analizy' : ' analiz'));
+}
+
+/* ── Export session as Markdown/text ── */
+function exportSession() {
+  if (S.history.length === 0) { alert('Brak wystąpień do eksportu.'); return; }
+
+  const date = new Date().toLocaleString('pl-PL');
+  let md = `# Notatki z rozprawy KIO\n\n`;
+  md += `**Data eksportu:** ${date}\n`;
+  if (S.thesis) md += `**Teza:** ${S.thesis}\n`;
+  md += `**Liczba wystąpień:** ${S.history.length}\n`;
+  md += `**Łączny koszt analiz:** ${S.totalCostPLN.toFixed(3)} PLN\n\n`;
+  md += `---\n\n`;
+
+  // Reverse to chronological order
+  [...S.history].reverse().forEach(s => {
+    md += `## Wystąpienie #${s.num} (${s.timeStr})\n\n`;
+    md += `### Transkrypt\n\n${s.transcript}\n\n`;
+    const a = s.analysis;
+    if (a?.podsumowanie) md += `### Podsumowanie\n\n${a.podsumowanie}\n\n`;
+
+    if (a?.compliance?.length) {
+      md += `### Zgodność z dokumentami\n\n`;
+      a.compliance.forEach(c => {
+        const icon = c.status === 'potwierdzone' ? '✓' : c.status === 'sprzeczne' ? '✗' : '·';
+        md += `- **${icon} ${c.argument}**\n  ${c.uzasadnienie}\n\n`;
+      });
+    }
+    if (a?.counter_arguments?.length) {
+      md += `### Kontrargumenty\n\n`;
+      a.counter_arguments.forEach((c, i) => {
+        md += `${i+1}. **${c.argument}**\n   _Podstawa:_ ${c.podstawa}\n\n`;
+      });
+    }
+    if (a?.new_arguments?.length) {
+      md += `### Nowe argumenty — riposta\n\n`;
+      a.new_arguments.forEach(n => {
+        md += `- **[${(n.priorytet||'?').toUpperCase()}] ${n.argument}**\n  _Sugestia:_ ${n.ocena}\n\n`;
+      });
+    }
+    md += `---\n\n`;
+  });
+
+  // Trigger download
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().split('T')[0];
+  a.download = `rozprawa-KIO-${stamp}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /* ── Progress / Error ── */
@@ -1080,7 +1458,7 @@ function showError(msg) {
   el.textContent = msg;
   panel.appendChild(el);
   switchTab('analysis');
-  setTimeout(()=>el.remove(), 10000);
+  setTimeout(()=>el.remove(), 12000);
 }
 
 /* ── Boot ── */
@@ -1095,6 +1473,26 @@ document.querySelectorAll('.model-seg-btn').forEach(btn => {
     S.model = btn.dataset.model;
     $('modelHint').textContent = S.model.includes('haiku') ? 'szybszy · tańszy' : 'dokładniejszy · wolniejszy';
   });
+});
+
+$('exportBtn').addEventListener('click', exportSession);
+
+$('clearSessionBtn').addEventListener('click', () => {
+  if (!confirm('Wyczyścić historię rozprawy? Dokumenty i klucze API pozostaną zachowane.')) return;
+  S.history = [];
+  S.speechCounter = 0;
+  S.totalCostPLN = 0;
+  saveSession();
+  renderHistory();
+  updateCostBar();
+});
+
+// Warn before leaving with active recording
+window.addEventListener('beforeunload', e => {
+  if (S.recording) {
+    e.preventDefault();
+    return e.returnValue = 'Nagrywanie jest aktywne — czy na pewno wyjść?';
+  }
 });
 </script>
 </body>
